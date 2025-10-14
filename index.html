@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manufacturing Ticketing System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .control-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .btn-secondary:hover {
+            background: #dee2e6;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        select, input {
+            padding: 0.75rem;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 4px solid;
+        }
+
+        .stat-card.marketing { border-left-color: #f093fb; }
+        .stat-card.sales { border-left-color: #4facfe; }
+        .stat-card.orders { border-left-color: #43e97b; }
+        .stat-card.support { border-left-color: #fa709a; }
+
+        .stat-card h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .tickets-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .ticket {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .ticket:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .ticket-id {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 0.9rem;
+        }
+
+        .ticket-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0.5rem 0;
+        }
+
+        .ticket-meta {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .badge {
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .pipeline-marketing { background: #f093fb; color: white; }
+        .pipeline-sales { background: #4facfe; color: white; }
+        .pipeline-orders { background: #43e97b; color: white; }
+        .pipeline-support { background: #fa709a; color: white; }
+
+        .status-new { background: #e3f2fd; color: #1976d2; }
+        .status-in-progress { background: #fff3e0; color: #f57c00; }
+        .status-pending { background: #fce4ec; color: #c2185b; }
+        .status-completed { background: #e8f5e9; color: #388e3c; }
+
+        .priority-high { background: #ffebee; color: #c62828; }
+        .priority-medium { background: #fff8e1; color: #f57f17; }
+        .priority-low { background: #f3e5f5; color: #7b1fa2; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: white;
+            max-width: 700px;
+            margin: 2rem auto;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .close {
+            font-size: 2rem;
+            cursor: pointer;
+            color: #6c757d;
+            border: none;
+            background: none;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .timeline {
+            margin-top: 2rem;
+            border-top: 1px solid #e9ecef;
+            padding-top: 1.5rem;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+
+        .timeline-dot {
+            width: 10px;
+            height: 10px;
+            background: #667eea;
+            border-radius: 50%;
+            margin-top: 0.5rem;
+        }
+
+        .timeline-content {
+            flex: 1;
+        }
+
+        .timeline-date {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6c757d;
+        }
+
+        .empty-state svg {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6c757d;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: #f8f9fa;
+            color: #495057;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .sankey-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            min-height: 600px;
+        }
+
+        .sankey-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            align-items: center;
+        }
+
+        .sankey-controls label {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        #sankeyChart {
+            width: 100%;
+            height: 600px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎫 Manufacturing Ticketing System</h1>
+        <p>Integrated Pipeline Management</p>
+    </div>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('tickets')">📋 Tickets</button>
+            <button class="tab" onclick="switchTab('sankey')">📊 Sankey Diagram</button>
+        </div>
+
+        <div id="ticketsTab" class="tab-content active">
+            <div class="controls">
+                <div class="control-group">
+                    <button class="btn btn-primary" onclick="openNewTicketModal()">+ New Ticket</button>
+                    <select id="filterPipeline" onchange="loadTickets()">
+                        <option value="all">All Pipelines</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="sales">Sales/Quoting</option>
+                        <option value="orders">Order Processing</option>
+                        <option value="support">Customer Support</option>
+                    </select>
+                    <select id="filterStatus" onchange="loadTickets()">
+                        <option value="all">All Statuses</option>
+                        <option value="new">New</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    <input type="text" id="searchBox" placeholder="Search tickets..." oninput="debounceSearch()">
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card marketing">
+                    <h3>Marketing Pipeline</h3>
+                    <div class="number" id="statMarketing">0</div>
+                </div>
+                <div class="stat-card sales">
+                    <h3>Sales/Quoting</h3>
+                    <div class="number" id="statSales">0</div>
+                </div>
+                <div class="stat-card orders">
+                    <h3>Order Processing</h3>
+                    <div class="number" id="statOrders">0</div>
+                </div>
+                <div class="stat-card support">
+                    <h3>Customer Support</h3>
+                    <div class="number" id="statSupport">0</div>
+                </div>
+            </div>
+
+            <div class="tickets-grid" id="ticketsContainer"></div>
+        </div>
+
+        <div id="sankeyTab" class="tab-content">
+            <div class="sankey-container">
+                <div class="sankey-controls">
+                    <label>View Pipeline:</label>
+                    <select id="sankeyPipeline" onchange="loadSankeyData()">
+                        <option value="all">All Pipelines</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="sales">Sales/Quoting</option>
+                        <option value="orders">Order Processing</option>
+                        <option value="support">Customer Support</option>
+                    </select>
+                    <label style="margin-left: 1rem;">
+                        <input type="checkbox" id="showCompleted" onchange="loadSankeyData()">
+                        Include Completed Tickets
+                    </label>
+                </div>
+                <div id="sankeyChart"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Ticket Modal -->
+    <div id="newTicketModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Ticket</h2>
+                <button class="close" onclick="closeNewTicketModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="createError"></div>
+                <form id="newTicketForm" onsubmit="createTicket(event)">
+                    <div class="form-group">
+                        <label>Title *</label>
+                        <input type="text" id="ticketTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Description *</label>
+                        <textarea id="ticketDescription" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Customer/Contact</label>
+                        <input type="text" id="ticketCustomer">
+                    </div>
+                    <div class="form-group">
+                        <label>Pipeline *</label>
+                        <select id="ticketPipeline" required>
+                            <option value="">Select Pipeline</option>
+                            <option value="marketing">Marketing</option>
+                            <option value="sales">Sales/Quoting</option>
+                            <option value="orders">Order Processing</option>
+                            <option value="support">Customer Support</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Priority *</label>
+                        <select id="ticketPriority" required>
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Assigned To</label>
+                        <input type="text" id="ticketAssigned">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Create Ticket</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Ticket Modal -->
+    <div id="viewTicketModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="viewTicketTitle">Ticket Details</h2>
+                <button class="close" onclick="closeViewTicketModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="updateError"></div>
+                <div id="ticketDetails"></div>
+                <div class="timeline">
+                    <h3 style="margin-bottom: 1rem;">Activity Timeline</h3>
+                    <div id="ticketTimeline"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick="deleteTicket()">Delete Ticket</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+        let currentTicketId = null;
+        let searchTimeout = null;
+        let allTickets = [];
+
+        // Load tickets on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadTickets();
+            loadStats();
+        });
+
+        // API Functions
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'API request failed');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        async function loadTickets() {
+            const pipeline = document.getElementById('filterPipeline').value;
+            const status = document.getElementById('filterStatus').value;
+            const search = document.getElementById('searchBox').value;
+
+            const params = new URLSearchParams();
+            if (pipeline !== 'all') params.append('pipeline', pipeline);
+            if (status !== 'all') params.append('status', status);
+            if (search) params.append('search', search);
+
+            const container = document.getElementById('ticketsContainer');
+            container.innerHTML = '<div class="loading">Loading tickets...</div>';
+
+            try {
+                const tickets = await apiCall(`/tickets?${params}`);
+                allTickets = tickets;
+                renderTickets(tickets);
+            } catch (error) {
+                container.innerHTML = `<div class="error">Error loading tickets: ${error.message}</div>`;
+            }
+        }
+
+        function renderTickets(tickets) {
+            const container = document.getElementById('ticketsContainer');
+            
+            if (tickets.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 11l3 3L22 4"></path>
+                            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+                        </svg>
+                        <h3>No tickets found</h3>
+                        <p>Try adjusting your filters or create a new ticket</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = tickets.map(ticket => {
+                const statusClass = ticket.status.replace('_', '-');
+                const pipelineName = {
+                    marketing: 'Marketing',
+                    sales: 'Sales/Quoting',
+                    orders: 'Order Processing',
+                    support: 'Customer Support'
+                }[ticket.pipeline];
+
+                const statusName = ticket.status.split('-').map(w => 
+                    w.charAt(0).toUpperCase() + w.slice(1)
+                ).join(' ');
+
+                return `
+                    <div class="ticket" onclick="openViewTicketModal('${ticket.id}')">
+                        <div class="ticket-header">
+                            <div>
+                                <div class="ticket-id">${ticket.id}</div>
+                                <div class="ticket-title">${ticket.title}</div>
+                                <div style="color: #6c757d; font-size: 0.9rem; margin-top: 0.5rem;">
+                                    ${ticket.description.substring(0, 100)}${ticket.description.length > 100 ? '...' : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ticket-meta">
+                            <span class="badge pipeline-${ticket.pipeline}">${pipelineName}</span>
+                            <span class="badge status-${statusClass}">${statusName}</span>
+                            <span class="badge priority-${ticket.priority}">
+                                ${ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)} Priority
+                            </span>
+                            ${ticket.customer ? `<span style="color: #6c757d;">👤 ${ticket.customer}</span>` : ''}
+                            ${ticket.assigned_to ? `<span style="color: #6c757d;">👨‍💼 ${ticket.assigned_to}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function loadStats() {
+            try {
+                const stats = await apiCall('/stats');
+                document.getElementById('statMarketing').textContent = stats.marketing || 0;
+                document.getElementById('statSales').textContent = stats.sales || 0;
+                document.getElementById('statOrders').textContent = stats.orders || 0;
+                document.getElementById('statSupport').textContent = stats.support || 0;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        function debounceSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(loadTickets, 300);
+        }
+
+        function openNewTicketModal() {
+            document.getElementById('newTicketModal').style.display = 'block';
+            document.getElementById('createError').innerHTML = '';
+        }
+
+        function closeNewTicketModal() {
+            document.getElementById('newTicketModal').style.display = 'none';
+            document.getElementById('newTicketForm').reset();
+        }
+
+        async function createTicket(event) {
+            event.preventDefault();
+
+            const ticketData = {
+                title: document.getElementById('ticketTitle').value,
+                description: document.getElementById('ticketDescription').value,
+                customer: document.getElementById('ticketCustomer').value,
+                pipeline: document.getElementById('ticketPipeline').value,
+                priority: document.getElementById('ticketPriority').value,
+                assigned_to: document.getElementById('ticketAssigned').value
+            };
+
+            try {
+                await apiCall('/tickets', {
+                    method: 'POST',
+                    body: JSON.stringify(ticketData)
+                });
+
+                closeNewTicketModal();
+                loadTickets();
+                loadStats();
+            } catch (error) {
+                document.getElementById('createError').innerHTML = 
+                    `<div class="error">Error creating ticket: ${error.message}</div>`;
+            }
+        }
+
+        async function openViewTicketModal(ticketId) {
+            currentTicketId = ticketId;
+            document.getElementById('viewTicketModal').style.display = 'block';
+            document.getElementById('updateError').innerHTML = '';
+
+            try {
+                const ticket = await apiCall(`/tickets/${ticketId}`);
+                
+                document.getElementById('viewTicketTitle').textContent = ticket.title;
+                
+                const detailsHtml = `
+                    <div class="form-group">
+                        <label>Ticket ID</label>
+                        <input type="text" value="${ticket.id}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea readonly>${ticket.description}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Customer/Contact</label>
+                        <input type="text" value="${ticket.customer || 'N/A'}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Pipeline</label>
+                        <select id="editPipeline" onchange="updateTicketField('pipeline', this.value, '${ticket.pipeline}')">
+                            <option value="marketing" ${ticket.pipeline === 'marketing' ? 'selected' : ''}>Marketing</option>
+                            <option value="sales" ${ticket.pipeline === 'sales' ? 'selected' : ''}>Sales/Quoting</option>
+                            <option value="orders" ${ticket.pipeline === 'orders' ? 'selected' : ''}>Order Processing</option>
+                            <option value="support" ${ticket.pipeline === 'support' ? 'selected' : ''}>Customer Support</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="editStatus" onchange="updateTicketField('status', this.value, '${ticket.status}')">
+                            <option value="new" ${ticket.status === 'new' ? 'selected' : ''}>New</option>
+                            <option value="in-progress" ${ticket.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
+                            <option value="pending" ${ticket.status === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="completed" ${ticket.status === 'completed' ? 'selected' : ''}>Completed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select id="editPriority" onchange="updateTicketField('priority', this.value, '${ticket.priority}')">
+                            <option value="low" ${ticket.priority === 'low' ? 'selected' : ''}>Low</option>
+                            <option value="medium" ${ticket.priority === 'medium' ? 'selected' : ''}>Medium</option>
+                            <option value="high" ${ticket.priority === 'high' ? 'selected' : ''}>High</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Assigned To</label>
+                        <input type="text" id="editAssigned" value="${ticket.assigned_to || ''}" 
+                               onblur="updateTicketField('assigned_to', this.value, '${ticket.assigned_to || ''}')">
+                    </div>
+                `;
+
+                document.getElementById('ticketDetails').innerHTML = detailsHtml;
+
+                const timelineHtml = ticket.timeline.map(item => {
+                    const date = new Date(item.created_at);
+                    return `
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div><strong>${item.action}</strong></div>
+                                <div class="timeline-date">${date.toLocaleString()} - ${item.user}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                document.getElementById('ticketTimeline').innerHTML = timelineHtml;
+            } catch (error) {
+                document.getElementById('updateError').innerHTML = 
+                    `<div class="error">Error loading ticket: ${error.message}</div>`;
+            }
+        }
+
+        function closeViewTicketModal() {
+            document.getElementById('viewTicketModal').style.display = 'none';
+            currentTicketId = null;
+        }
+
+        async function updateTicketField(field, value, oldValue) {
+            if (value === oldValue) return;
+
+            try {
+                await apiCall(`/tickets/${currentTicketId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ field, value, oldValue })
+                });
+
+                loadTickets();
+                loadStats();
+                setTimeout(() => openViewTicketModal(currentTicketId), 100);
+            } catch (error) {
+                document.getElementById('updateError').innerHTML = 
+                    `<div class="error">Error updating ticket: ${error.message}</div>`;
+            }
+        }
+
+        async function deleteTicket() {
+            if (!confirm('Are you sure you want to delete this ticket? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                await apiCall(`/tickets/${currentTicketId}`, {
+                    method: 'DELETE'
+                });
+
+                closeViewTicketModal();
+                loadTickets();
+                loadStats();
+            } catch (error) {
+                document.getElementById('updateError').innerHTML = 
+                    `<div class="error">Error deleting ticket: ${error.message}</div>`;
+            }
+        }
+
+        window.onclick = function(event) {
+            if (event.target.className === 'modal') {
+                event.target.style.display = 'none';
+            }
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            if (tabName === 'tickets') {
+                document.getElementById('ticketsTab').classList.add('active');
+            } else if (tabName === 'sankey') {
+                document.getElementById('sankeyTab').classList.add('active');
+                loadSankeyData();
+            }
+        }
+
+        // Load and render Sankey diagram
+        async function loadSankeyData() {
+            try {
+                // Load all tickets if not already loaded
+                if (allTickets.length === 0) {
+                    allTickets = await apiCall('/tickets');
+                }
+
+                const selectedPipeline = document.getElementById('sankeyPipeline').value;
+                const showCompleted = document.getElementById('showCompleted').checked;
+
+                // Filter tickets
+                let tickets = allTickets;
+                if (selectedPipeline !== 'all') {
+                    tickets = tickets.filter(t => t.pipeline === selectedPipeline);
+                }
+                if (!showCompleted) {
+                    tickets = tickets.filter(t => t.status !== 'completed');
+                }
+
+                renderSankeyDiagram(tickets);
+            } catch (error) {
+                console.error('Error loading Sankey data:', error);
+                document.getElementById('sankeyChart').innerHTML = 
+                    `<div class="error">Error loading diagram: ${error.message}</div>`;
+            }
+        }
+
+        function renderSankeyDiagram(tickets) {
+            if (tickets.length === 0) {
+                document.getElementById('sankeyChart').innerHTML = `
+                    <div class="empty-state">
+                        <h3>No tickets to display</h3>
+                        <p>Adjust your filters or create tickets to see the flow</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Define nodes
+            const nodes = [
+                // Pipelines
+                { id: 0, label: 'Marketing', color: 'rgba(240, 147, 251, 0.8)' },
+                { id: 1, label: 'Sales/Quoting', color: 'rgba(79, 172, 254, 0.8)' },
+                { id: 2, label: 'Order Processing', color: 'rgba(67, 233, 123, 0.8)' },
+                { id: 3, label: 'Customer Support', color: 'rgba(250, 112, 154, 0.8)' },
+                
+                // Statuses for each pipeline
+                { id: 4, label: 'Marketing: New', color: 'rgba(227, 242, 253, 0.8)' },
+                { id: 5, label: 'Marketing: In Progress', color: 'rgba(255, 243, 224, 0.8)' },
+                { id: 6, label: 'Marketing: Pending', color: 'rgba(252, 228, 236, 0.8)' },
+                { id: 7, label: 'Marketing: Completed', color: 'rgba(232, 245, 233, 0.8)' },
+                
+                { id: 8, label: 'Sales: New', color: 'rgba(227, 242, 253, 0.8)' },
+                { id: 9, label: 'Sales: In Progress', color: 'rgba(255, 243, 224, 0.8)' },
+                { id: 10, label: 'Sales: Pending', color: 'rgba(252, 228, 236, 0.8)' },
+                { id: 11, label: 'Sales: Completed', color: 'rgba(232, 245, 233, 0.8)' },
+                
+                { id: 12, label: 'Orders: New', color: 'rgba(227, 242, 253, 0.8)' },
+                { id: 13, label: 'Orders: In Progress', color: 'rgba(255, 243, 224, 0.8)' },
+                { id: 14, label: 'Orders: Pending', color: 'rgba(252, 228, 236, 0.8)' },
+                { id: 15, label: 'Orders: Completed', color: 'rgba(232, 245, 233, 0.8)' },
+                
+                { id: 16, label: 'Support: New', color: 'rgba(227, 242, 253, 0.8)' },
+                { id: 17, label: 'Support: In Progress', color: 'rgba(255, 243, 224, 0.8)' },
+                { id: 18, label: 'Support: Pending', color: 'rgba(252, 228, 236, 0.8)' },
+                { id: 19, label: 'Support: Completed', color: 'rgba(232, 245, 233, 0.8)' }
+            ];
+
+            // Map pipeline and status to node IDs
+            const pipelineToNode = {
+                'marketing': 0,
+                'sales': 1,
+                'orders': 2,
+                'support': 3
+            };
+
+            const statusToNodeOffset = {
+                'new': 0,
+                'in-progress': 1,
+                'pending': 2,
+                'completed': 3
+            };
+
+            const pipelineStatusBase = {
+                'marketing': 4,
+                'sales': 8,
+                'orders': 12,
+                'support': 16
+            };
+
+            // Count tickets for flows
+            const flowCounts = {};
+            
+            tickets.forEach(ticket => {
+                const pipelineNode = pipelineToNode[ticket.pipeline];
+                const statusNode = pipelineStatusBase[ticket.pipeline] + statusToNodeOffset[ticket.status];
+                const flowKey = `${pipelineNode}-${statusNode}`;
+                flowCounts[flowKey] = (flowCounts[flowKey] || 0) + 1;
+            });
+
+            // Create links
+            const links = [];
+            Object.entries(flowCounts).forEach(([key, value]) => {
+                const [source, target] = key.split('-').map(Number);
+                links.push({
+                    source: source,
+                    target: target,
+                    value: value
+                });
+            });
+
+            // Prepare data for Plotly
+            const data = [{
+                type: "sankey",
+                orientation: "h",
+                node: {
+                    pad: 15,
+                    thickness: 30,
+                    line: {
+                        color: "white",
+                        width: 2
+                    },
+                    label: nodes.map(n => n.label),
+                    color: nodes.map(n => n.color)
+                },
+                link: {
+                    source: links.map(l => l.source),
+                    target: links.map(l => l.target),
+                    value: links.map(l => l.value),
+                    color: links.map(l => {
+                        const sourceNode = nodes[l.source];
+                        return sourceNode.color.replace('0.8', '0.4');
+                    })
+                }
+            }];
+
+            const layout = {
+                title: {
+                    text: "Ticket Flow Visualization",
+                    font: { size: 20 }
+                },
+                font: {
+                    size: 12
+                },
+                margin: { t: 50, l: 10, r: 10, b: 10 }
+            };
+
+            const config = {
+                responsive: true,
+                displayModeBar: true,
+                displaylogo: false
+            };
+
+            Plotly.newPlot('sankeyChart', data, layout, config);
+        }
+    </script>
+</body>
+</html>

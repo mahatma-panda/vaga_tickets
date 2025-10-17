@@ -172,6 +172,361 @@ grep "FEATURE" DECISION_LOG.md
 
 See `DECISION_LOG_GUIDE.md` for complete documentation on using and maintaining the decision log.
 
+## Quick Reference Commands
+
+### Common Development Tasks
+
+#### Update from GitHub and Restart
+
+```bash
+# Stop the server (Ctrl+C if running, or kill process)
+# Linux/Mac: Find and kill the process
+lsof -ti:3000 | xargs kill -9
+
+# Windows: Find and kill the process
+netstat -ano | findstr :3000
+# Note the PID, then:
+taskkill /PID <PID> /F
+
+# Pull latest changes from GitHub
+git pull origin main
+
+# Install any new dependencies
+npm install
+
+# Run tests to verify everything works
+npm test
+
+# Start the server
+npm start
+```
+
+#### Fresh Start (Clean Setup)
+
+```bash
+# Clone the repository (first time only)
+git clone <repository-url>
+cd ticketing-system
+
+# Install dependencies
+npm install
+
+# Start server
+npm start
+
+# In a new terminal, run tests
+npm test
+```
+
+#### Daily Workflow
+
+```bash
+# Morning: Update and check
+git pull origin main
+npm install
+npm test
+
+# If tests pass, start server
+npm start
+
+# Evening: Commit changes
+git add .
+git commit -m "Description of changes made"
+git push origin main
+```
+
+#### Testing Workflow
+
+```bash
+# Run all tests once
+npm test
+
+# Run tests continuously (watches for changes)
+npm run test:watch
+
+# Run tests and view decision log
+npm test && tail -n 50 DECISION_LOG.md
+```
+
+#### Server Management
+
+```bash
+# Start server (foreground)
+npm start
+
+# Start server in background (Linux/Mac)
+npm start &
+
+# Start server in background (Windows - use PM2)
+npm install -g pm2
+pm2 start server.js --name ticketing-system
+pm2 list
+pm2 logs ticketing-system
+pm2 stop ticketing-system
+pm2 restart ticketing-system
+
+# Check if server is running
+# Linux/Mac
+curl http://localhost:3000/api/health
+
+# Windows
+curl.exe http://localhost:3000/api/health
+# Or open in browser: http://localhost:3000/api/health
+```
+
+#### Git Operations
+
+```bash
+# Check current status
+git status
+
+# View recent changes
+git log --oneline -10
+
+# Create a new branch
+git checkout -b feature-name
+
+# Switch between branches
+git checkout main
+git checkout feature-name
+
+# View changes before committing
+git diff
+
+# Discard local changes (CAREFUL!)
+git reset --hard HEAD
+git pull origin main
+
+# Update from GitHub without losing local changes
+git stash
+git pull origin main
+git stash pop
+```
+
+#### Database Management
+
+```bash
+# Backup database
+cp tickets.db tickets_backup_$(date +%Y%m%d_%H%M%S).db
+
+# Linux/Mac with date formatting
+cp tickets.db "tickets_backup_$(date +%Y%m%d_%H%M%S).db"
+
+# Windows
+copy tickets.db tickets_backup_%date:~-4,4%%date:~-10,2%%date:~-7,2%.db
+
+# Reset database (delete and restart server to recreate)
+rm tickets.db    # Linux/Mac
+del tickets.db   # Windows
+npm start        # Recreates with sample data
+
+# View database contents (requires sqlite3 CLI)
+sqlite3 tickets.db "SELECT * FROM tickets LIMIT 10;"
+sqlite3 tickets.db "SELECT COUNT(*) FROM tickets;"
+```
+
+#### Troubleshooting Commands
+
+```bash
+# Server won't start - port already in use
+# Linux/Mac
+lsof -ti:3000 | xargs kill -9
+netstat -tulpn | grep 3000
+
+# Windows
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F
+
+# Check Node.js version
+node --version
+npm --version
+
+# Clear npm cache
+npm cache clean --force
+rm -rf node_modules    # Linux/Mac
+rmdir /s node_modules  # Windows
+npm install
+
+# View server logs (if using PM2)
+pm2 logs ticketing-system
+pm2 logs ticketing-system --lines 100
+
+# Test database connection
+node -e "const sqlite3 = require('sqlite3'); const db = new sqlite3.Database('./tickets.db'); db.get('SELECT COUNT(*) as count FROM tickets', (err, row) => { console.log(err || 'Tickets:', row); });"
+```
+
+#### Network Configuration Commands
+
+```bash
+# Find your IP address
+# Linux
+ip addr show | grep inet
+
+# Mac
+ifconfig | grep inet
+
+# Windows
+ipconfig
+
+# Test server from another machine
+curl http://YOUR_IP:3000/api/health
+
+# Allow firewall access (run as administrator)
+# Linux (Ubuntu/Debian)
+sudo ufw allow 3000/tcp
+sudo ufw status
+
+# Windows
+netsh advfirewall firewall add rule name="Ticketing System" dir=in action=allow protocol=TCP localport=3000
+
+# Mac
+# System Preferences > Security & Privacy > Firewall > Firewall Options
+# Add Node.js to allowed applications
+```
+
+#### Monitoring and Logs
+
+```bash
+# Monitor server logs in real-time (if using PM2)
+pm2 logs ticketing-system --lines 50
+
+# Check system resources
+# Linux/Mac
+top
+htop  # If installed
+
+# Windows
+tasklist | findstr node
+
+# View decision log
+cat DECISION_LOG.md
+tail -n 50 DECISION_LOG.md
+grep "FEATURE" DECISION_LOG.md
+
+# Count tickets in database
+sqlite3 tickets.db "SELECT pipeline, status, COUNT(*) FROM tickets GROUP BY pipeline, status;"
+```
+
+#### Complete Refresh and Restart (Emergency)
+
+```bash
+# CAUTION: This will reset everything to GitHub state
+
+# 1. Backup database (optional but recommended)
+cp tickets.db tickets_backup_emergency.db
+
+# 2. Stop server
+lsof -ti:3000 | xargs kill -9  # Linux/Mac
+# Or Ctrl+C if running in terminal
+
+# 3. Discard all local changes
+git fetch origin
+git reset --hard origin/main
+
+# 4. Clean dependencies
+rm -rf node_modules package-lock.json
+npm install
+
+# 5. Reset database (optional)
+rm tickets.db
+
+# 6. Run tests
+npm test
+
+# 7. Start server
+npm start
+
+# 8. Verify in browser
+# Open: http://localhost:3000
+```
+
+#### One-Liner Commands
+
+```bash
+# Quick update and restart
+git pull && npm install && npm test && npm start
+
+# Full refresh (no database reset)
+git pull && rm -rf node_modules && npm install && npm test && npm start
+
+# Backup, update, test, start
+cp tickets.db tickets_backup.db && git pull && npm install && npm test && npm start
+
+# Check everything is working
+curl http://localhost:3000/api/health && curl http://localhost:3000/api/stats
+```
+
+### Scheduled Tasks (Automation)
+
+#### Linux/Mac Cron Jobs
+
+```bash
+# Edit crontab
+crontab -e
+
+# Daily database backup at 2 AM
+0 2 * * * cp /path/to/ticketing-system/tickets.db /path/to/backups/tickets_$(date +\%Y\%m\%d).db
+
+# Auto-update and restart at 3 AM Sunday
+0 3 * * 0 cd /path/to/ticketing-system && git pull && npm install && pm2 restart ticketing-system
+
+# Run tests daily at 1 AM and log results
+0 1 * * * cd /path/to/ticketing-system && npm test >> /path/to/logs/test_results.log 2>&1
+```
+
+#### Windows Task Scheduler
+
+Create batch files and schedule them:
+
+**backup.bat:**
+```batch
+@echo off
+cd C:\ticketing-system
+copy tickets.db "backups\tickets_%date:~-4,4%%date:~-10,2%%date:~-7,2%.db"
+```
+
+**update_restart.bat:**
+```batch
+@echo off
+cd C:\ticketing-system
+git pull origin main
+npm install
+pm2 restart ticketing-system
+```
+
+Schedule via Task Scheduler or command line:
+```cmd
+schtasks /create /tn "Backup Tickets DB" /tr "C:\ticketing-system\backup.bat" /sc daily /st 02:00
+```
+
+### Git Workflow Summary
+
+```bash
+# DAILY: Pull latest changes
+git pull origin main
+
+# BEFORE MAKING CHANGES: Create branch
+git checkout -b my-feature-name
+
+# WHILE WORKING: Commit frequently
+git add .
+git commit -m "Descriptive message"
+
+# WHEN DONE: Push branch
+git push origin my-feature-name
+
+# Create pull request on GitHub, then after merge:
+git checkout main
+git pull origin main
+git branch -d my-feature-name
+
+# EMERGENCY: Undo last commit (keep changes)
+git reset --soft HEAD~1
+
+# EMERGENCY: Undo last commit (discard changes)
+git reset --hard HEAD~1
+```
+
 ## API Endpoints
 
 ### Tickets

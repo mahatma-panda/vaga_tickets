@@ -493,6 +493,10 @@
                 <div id="createError"></div>
                 <form id="newTicketForm" onsubmit="createTicket(event)">
                     <div class="form-group">
+                        <label>Ticket ID (Auto-generated)</label>
+                        <input type="text" id="nextTicketId" readonly style="background-color: #f8f9fa; cursor: not-allowed;">
+                    </div>
+                    <div class="form-group">
                         <label>Title *</label>
                         <input type="text" id="ticketTitle" required>
                     </div>

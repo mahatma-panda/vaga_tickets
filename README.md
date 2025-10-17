@@ -101,6 +101,20 @@ npm start
 
 The server will start on `http://localhost:3000`
 
+### Running Tests
+
+Automated tests verify all system functionality:
+
+```bash
+# Run tests once
+npm test
+
+# Run tests in watch mode (continuous)
+npm run test:watch
+```
+
+See `TEST_README.md` for detailed testing documentation.
+
 ## Accessing the Application
 
 1. Open your web browser
@@ -111,13 +125,52 @@ The server will start on `http://localhost:3000`
 
 ```
 ticketing-system/
-├── server.js           # Backend server and API
-├── package.json        # Dependencies and scripts
-├── tickets.db          # SQLite database (created automatically)
+├── server.js              # Backend server and API
+├── package.json           # Dependencies and scripts
+├── tickets.db             # SQLite database (created automatically)
+├── DECISION_LOG.md        # Project decisions and changes log
 ├── public/
-│   └── index.html      # Frontend application
-└── README.md          # This file
+│   └── index.html         # Frontend application
+├── test/
+│   └── test.js            # Automated test suite
+├── README.md              # This file
+├── TEST_README.md         # Testing documentation
+└── DECISION_LOG_GUIDE.md  # Guide for decision logging
 ```
+
+## Decision Log
+
+This project maintains a comprehensive decision log in `DECISION_LOG.md` that tracks:
+
+- Architecture decisions and rationale
+- Feature additions and changes
+- Bug fixes and resolutions
+- Performance optimizations
+- Test results and findings
+- All significant project events
+
+### Why We Log Decisions
+
+- **Historical Record**: Understand why decisions were made
+- **Knowledge Transfer**: Help new team members get up to speed
+- **Audit Trail**: Maintain compliance and accountability
+- **Team Communication**: Share decisions across the team
+- **Continuous Improvement**: Learn from past decisions
+
+### Viewing the Decision Log
+
+```bash
+# View the entire log
+cat DECISION_LOG.md
+
+# View recent entries
+tail -n 50 DECISION_LOG.md
+
+# Search for specific topics
+grep "FEATURE" DECISION_LOG.md
+```
+
+See `DECISION_LOG_GUIDE.md` for complete documentation on using and maintaining the decision log.
 
 ## API Endpoints
 

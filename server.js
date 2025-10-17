@@ -21,12 +21,36 @@ const db = new sqlite3.Database('./tickets.db', (err) => {
   }
 });
 
+// Simple in-memory session store
+const sessions = new Map();
+
+// Middleware to check authentication
+function requireAuth(req, res, next) {
+  const sessionId = req.headers['x-session-id'];
+  
+  if (!sessionId || !sessions.has(sessionId)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  req.user = sessions.get(sessionId);
+  next();
+}
+
 // Initialize database tables
 function initializeDatabase() {
   db.serialize(() => {
-    // Tickets table
+    // Users table
     db.run(`
-      CREATE TABLE IF NOT EXISTS tickets (
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        full_name TEXT NOT NULL,
+        email TEXT,
+        role TEXT DEFAULT 'user',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         description TEXT NOT NULL,
@@ -59,6 +83,13 @@ function initializeDatabase() {
 
     console.log('Database tables initialized');
     
+    // Insert sample users if users table is empty
+    db.get('SELECT COUNT(*) as count FROM users', (err, row) => {
+      if (!err && row.count === 0) {
+        insertSampleUsers();
+      }
+    });
+    
     // Insert sample data if tickets table is empty
     db.get('SELECT COUNT(*) as count FROM tickets', (err, row) => {
       if (!err && row.count === 0) {
@@ -66,6 +97,28 @@ function initializeDatabase() {
       }
     });
   });
+}
+
+// Insert sample users
+function insertSampleUsers() {
+  const sampleUsers = [
+    { username: 'admin', password: 'admin123', full_name: 'Administrator', email: 'admin@company.com', role: 'admin' },
+    { username: 'sjohnson', password: 'password123', full_name: 'Sarah Johnson', email: 'sarah.johnson@company.com', role: 'user' },
+    { username: 'mchen', password: 'password123', full_name: 'Mike Chen', email: 'mike.chen@company.com', role: 'user' },
+    { username: 'jdoe', password: 'password123', full_name: 'John Doe', email: 'john.doe@company.com', role: 'user' }
+  ];
+
+  const stmt = db.prepare(`
+    INSERT INTO users (username, password, full_name, email, role)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+
+  sampleUsers.forEach(user => {
+    stmt.run([user.username, user.password, user.full_name, user.email, user.role]);
+  });
+
+  stmt.finalize();
+  console.log('Sample users inserted (WARNING: Using plain text passwords - for demo only!)');
 }
 
 // Insert sample data
@@ -79,7 +132,8 @@ function insertSampleData() {
       pipeline: 'marketing',
       status: 'in-progress',
       priority: 'high',
-      assigned_to: 'Sarah Johnson'
+      assigned_to: 'Sarah Johnson',
+      created_by: 'Sarah Johnson'
     },
     {
       id: 'TKT-002',
@@ -89,7 +143,8 @@ function insertSampleData() {
       pipeline: 'sales',
       status: 'pending',
       priority: 'high',
-      assigned_to: 'Mike Chen'
+      assigned_to: 'Mike Chen',
+      created_by: 'Mike Chen'
     },
     {
       id: 'TKT-003',
@@ -99,7 +154,8 @@ function insertSampleData() {
       pipeline: 'orders',
       status: 'in-progress',
       priority: 'high',
-      assigned_to: 'Production Team'
+      assigned_to: 'Production Team',
+      created_by: 'John Doe'
     },
     {
       id: 'TKT-004',
@@ -109,13 +165,14 @@ function insertSampleData() {
       pipeline: 'support',
       status: 'new',
       priority: 'high',
-      assigned_to: 'Support Team'
+      assigned_to: 'Support Team',
+      created_by: 'Administrator'
     }
   ];
 
   const stmt = db.prepare(`
-    INSERT INTO tickets (id, title, description, customer, pipeline, status, priority, assigned_to)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO tickets (id, title, description, customer, pipeline, status, priority, assigned_to, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   sampleTickets.forEach(ticket => {
@@ -127,7 +184,8 @@ function insertSampleData() {
       ticket.pipeline,
       ticket.status,
       ticket.priority,
-      ticket.assigned_to
+      ticket.assigned_to,
+      ticket.created_by
     ]);
 
     // Add initial timeline entry
@@ -143,8 +201,83 @@ function insertSampleData() {
 
 // API Routes
 
+// Authentication endpoints
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password required' });
+  }
+
+  db.get(
+    'SELECT id, username, full_name, email, role FROM users WHERE username = ? AND password = ?',
+    [username, password],
+    (err, user) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+
+      if (!user) {
+        res.status(401).json({ error: 'Invalid credentials' });
+        return;
+      }
+
+      // Create session
+      const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessions.set(sessionId, user);
+
+      res.json({
+        sessionId,
+        user: {
+          id: user.id,
+          username: user.username,
+          fullName: user.full_name,
+          email: user.email,
+          role: user.role
+        }
+      });
+    }
+  );
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  const sessionId = req.headers['x-session-id'];
+  
+  if (sessionId) {
+    sessions.delete(sessionId);
+  }
+
+  res.json({ message: 'Logged out successfully' });
+});
+
+app.get('/api/auth/me', requireAuth, (req, res) => {
+  res.json({
+    user: {
+      id: req.user.id,
+      username: req.user.username,
+      fullName: req.user.full_name,
+      email: req.user.email,
+      role: req.user.role
+    }
+  });
+});
+
+app.get('/api/users', requireAuth, (req, res) => {
+  db.all(
+    'SELECT id, username, full_name, email, role FROM users ORDER BY full_name',
+    (err, users) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      res.json(users);
+    }
+  );
+});
+
 // Get all tickets with optional filters
-app.get('/api/tickets', (req, res) => {
+app.get('/api/tickets', requireAuth, (req, res) => {
   const { pipeline, status, search } = req.query;
   
   let query = 'SELECT * FROM tickets WHERE 1=1';
@@ -183,7 +316,7 @@ app.get('/api/tickets', (req, res) => {
 });
 
 // Get single ticket with timeline
-app.get('/api/tickets/:id', (req, res) => {
+app.get('/api/tickets/:id', requireAuth, (req, res) => {
   const { id } = req.params;
 
   db.get('SELECT * FROM tickets WHERE id = ?', [id], (err, ticket) => {
@@ -212,7 +345,7 @@ app.get('/api/tickets/:id', (req, res) => {
 });
 
 // Create new ticket
-app.post('/api/tickets', (req, res) => {
+app.post('/api/tickets', requireAuth, (req, res) => {
   const { title, description, customer, pipeline, priority, assigned_to } = req.body;
 
   // Validate required fields
@@ -220,6 +353,9 @@ app.post('/api/tickets', (req, res) => {
     res.status(400).json({ error: 'Missing required fields' });
     return;
   }
+
+  // Get created_by from authenticated user
+  const createdBy = req.user.full_name;
 
   // Generate ticket ID
   db.get('SELECT MAX(CAST(SUBSTR(id, 5) AS INTEGER)) as max_num FROM tickets', (err, row) => {
@@ -232,12 +368,12 @@ app.post('/api/tickets', (req, res) => {
     const ticketId = `TKT-${String(nextNum).padStart(3, '0')}`;
 
     const stmt = db.prepare(`
-      INSERT INTO tickets (id, title, description, customer, pipeline, status, priority, assigned_to)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO tickets (id, title, description, customer, pipeline, status, priority, assigned_to, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
-      [ticketId, title, description, customer, pipeline, 'new', priority, assigned_to],
+      [ticketId, title, description, customer, pipeline, 'new', priority, assigned_to, createdBy],
       function(err) {
         if (err) {
           res.status(500).json({ error: err.message });
@@ -247,7 +383,7 @@ app.post('/api/tickets', (req, res) => {
         // Add timeline entry
         db.run(
           'INSERT INTO timeline (ticket_id, action, user) VALUES (?, ?, ?)',
-          [ticketId, 'Ticket created', 'Current User']
+          [ticketId, 'Ticket created', createdBy]
         );
 
         // Return the created ticket
@@ -266,7 +402,7 @@ app.post('/api/tickets', (req, res) => {
 });
 
 // Update ticket
-app.put('/api/tickets/:id', (req, res) => {
+app.put('/api/tickets/:id', requireAuth, (req, res) => {
   const { id } = req.params;
   const { field, value, oldValue } = req.body;
 
@@ -310,9 +446,11 @@ app.put('/api/tickets/:id', (req, res) => {
       ? `${fieldNames[field]} changed from "${oldValue}" to "${value}"`
       : `${fieldNames[field]} updated to "${value}"`;
 
+    const userName = req.user.full_name;
+
     db.run(
       'INSERT INTO timeline (ticket_id, action, user) VALUES (?, ?, ?)',
-      [id, action, 'Current User']
+      [id, action, userName]
     );
 
     // Return updated ticket
@@ -327,7 +465,7 @@ app.put('/api/tickets/:id', (req, res) => {
 });
 
 // Delete ticket
-app.delete('/api/tickets/:id', (req, res) => {
+app.delete('/api/tickets/:id', requireAuth, (req, res) => {
   const { id } = req.params;
 
   db.serialize(() => {
@@ -352,7 +490,7 @@ app.delete('/api/tickets/:id', (req, res) => {
 });
 
 // Get statistics
-app.get('/api/stats', (req, res) => {
+app.get('/api/stats', requireAuth, (req, res) => {
   const stats = {};
 
   db.serialize(() => {
@@ -382,18 +520,21 @@ app.get('/api/stats', (req, res) => {
 });
 
 // Add timeline entry
-app.post('/api/tickets/:id/timeline', (req, res) => {
+app.post('/api/tickets/:id/timeline', requireAuth, (req, res) => {
   const { id } = req.params;
   const { action, user } = req.body;
 
-  if (!action || !user) {
-    res.status(400).json({ error: 'Missing action or user' });
+  // Use authenticated user if no user specified
+  const userName = user || req.user.full_name;
+
+  if (!action) {
+    res.status(400).json({ error: 'Missing action' });
     return;
   }
 
   db.run(
     'INSERT INTO timeline (ticket_id, action, user) VALUES (?, ?, ?)',
-    [id, action, user],
+    [id, action, userName],
     function(err) {
       if (err) {
         res.status(500).json({ error: err.message });
